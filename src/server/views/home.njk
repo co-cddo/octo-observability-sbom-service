@@ -1,0 +1,17 @@
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% extends "layout.njk" %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">VODG SBOM Service</h1>
+<p class="govuk-body-l">
+  Software Bill of Materials ingestion, vulnerability scanning, and release cadence tracking
+  for UK government digital services.
+</p>
+
+{{ govukButton({
+  text: "Sign in",
+  href: "/auth/login",
+  isStartButton: true
+}) }}
+{% endblock %}

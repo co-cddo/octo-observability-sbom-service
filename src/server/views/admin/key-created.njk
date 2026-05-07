@@ -1,0 +1,45 @@
+{% from "govuk/components/panel/macro.njk" import govukPanel %}
+{% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+
+{% extends "../layout.njk" %}
+
+{% block content %}
+{{ govukPanel({
+  titleText: "API key created",
+  text: "for " + service.name
+}) }}
+
+{{ govukWarningText({
+  text: "Copy this key now. It will not be shown again.",
+  iconFallbackText: "Warning"
+}) }}
+
+{{ govukInsetText({
+  text: rawKey,
+  classes: "app-inset-text--monospace"
+}) }}
+
+{{ govukSummaryList({
+  rows: [
+    {
+      key: { text: "Service" },
+      value: { text: service.name }
+    },
+    {
+      key: { text: "Service ID" },
+      value: { html: "<code>" + service.id + "</code>" }
+    },
+    {
+      key: { text: "Label" },
+      value: { text: label }
+    }
+  ]
+}) }}
+
+<p class="govuk-body">
+  <a href="/admin/services/{{ service.id }}/onboard" class="govuk-link">View integration instructions</a> |
+  <a href="/admin/services/{{ service.id }}/keys" class="govuk-link">Back to keys</a>
+</p>
+{% endblock %}

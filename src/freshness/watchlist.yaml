@@ -1,0 +1,38 @@
+packages:
+  - name: node
+    ecosystem: npm
+    endoflife_product: nodejs
+    match_component: "node"
+
+  - name: spring-boot
+    ecosystem: Maven
+    endoflife_product: spring-boot
+    match_component: "org.springframework.boot:spring-boot"
+
+  - name: express
+    ecosystem: npm
+    endoflife_product: null
+    registry: npmjs
+    match_component: "express"
+
+  - name: govuk-frontend
+    ecosystem: npm
+    endoflife_product: null
+    registry: npmjs
+    match_component: "govuk-frontend"
+
+  - name: flask
+    ecosystem: PyPI
+    endoflife_product: null
+    registry: pypi
+    match_component: "flask"
+
+  - name: django
+    ecosystem: PyPI
+    endoflife_product: django
+    match_component: "django"
+
+  - name: rails
+    ecosystem: RubyGems
+    endoflife_product: rails
+    match_component: "rails"

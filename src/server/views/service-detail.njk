@@ -1,0 +1,168 @@
+{% from "govuk/components/back-link/macro.njk" import govukBackLink %}
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+{% from "components/metric-card.njk" import appMetricCard %}
+
+{% extends "layout.njk" %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back to dashboard",
+    href: "/dashboard"
+  }) }}
+{% endblock %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">{{ service.name }}</h1>
+<p class="govuk-body-l">{{ service.organisation }}</p>
+
+{% if timeToPatch %}
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-one-third">
+    {{ appMetricCard({ value: timeToPatch.mean_days + "d", label: "Mean time to patch" }) }}
+  </div>
+  <div class="govuk-grid-column-one-third">
+    {{ appMetricCard({ value: timeToPatch.median_days + "d", label: "Median time to patch" }) }}
+  </div>
+  <div class="govuk-grid-column-one-third">
+    {{ appMetricCard({ value: timeToPatch.p95_days + "d", label: "P95 time to patch" }) }}
+  </div>
+</div>
+{% endif %}
+
+<h2 class="govuk-heading-l">Open Vulnerabilities</h2>
+
+{% if vulnerabilities.length > 0 %}
+<table class="govuk-table">
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th scope="col" class="govuk-table__header">CVE</th>
+      <th scope="col" class="govuk-table__header">Severity</th>
+      <th scope="col" class="govuk-table__header">CVSS</th>
+      <th scope="col" class="govuk-table__header">Package</th>
+      <th scope="col" class="govuk-table__header">Version</th>
+      <th scope="col" class="govuk-table__header">Fix Available</th>
+      <th scope="col" class="govuk-table__header">First Seen</th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+    {% for vuln in vulnerabilities %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell">
+        <a href="https://osv.dev/vulnerability/{{ vuln.cve_id }}" class="govuk-link" target="_blank">{{ vuln.cve_id }}</a>
+      </td>
+      <td class="govuk-table__cell">
+        {% if vuln.severity == 'critical' %}
+          {{ govukTag({ text: "Critical", classes: "govuk-tag--red" }) }}
+        {% elif vuln.severity == 'high' %}
+          {{ govukTag({ text: "High", classes: "govuk-tag--amber" }) }}
+        {% elif vuln.severity == 'medium' %}
+          {{ govukTag({ text: "Medium", classes: "govuk-tag--green" }) }}
+        {% else %}
+          {{ govukTag({ text: vuln.severity, classes: "govuk-tag--grey" }) }}
+        {% endif %}
+      </td>
+      <td class="govuk-table__cell">{{ vuln.cvss_score if vuln.cvss_score else '—' }}</td>
+      <td class="govuk-table__cell"><code>{{ vuln.affected_package }}</code></td>
+      <td class="govuk-table__cell"><code>{{ vuln.affected_version }}</code></td>
+      <td class="govuk-table__cell">
+        {% if vuln.fixed_version %}
+          <code>{{ vuln.fixed_version }}</code>
+        {% else %}
+          {{ govukTag({ text: "None", classes: "govuk-tag--grey" }) }}
+        {% endif %}
+      </td>
+      <td class="govuk-table__cell">{{ vuln.first_seen_at | date }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="govuk-body">No open vulnerabilities.</p>
+{% endif %}
+
+{% if freshness.length > 0 %}
+<h2 class="govuk-heading-l">Package Freshness</h2>
+
+<table class="govuk-table">
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th scope="col" class="govuk-table__header">Package</th>
+      <th scope="col" class="govuk-table__header">Detected</th>
+      <th scope="col" class="govuk-table__header">Latest</th>
+      <th scope="col" class="govuk-table__header">Status</th>
+      <th scope="col" class="govuk-table__header">State</th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+    {% for pkg in freshness %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell"><code>{{ pkg.package_name }}</code></td>
+      <td class="govuk-table__cell"><code>{{ pkg.detected_version if pkg.detected_version else '—' }}</code></td>
+      <td class="govuk-table__cell"><code>{{ pkg.latest_version if pkg.latest_version else '—' }}</code></td>
+      <td class="govuk-table__cell">
+        {% if pkg.lts_status == 'eol' %}
+          EOL{% if pkg.eol_date %} ({{ pkg.eol_date | date }}){% endif %}
+        {% elif pkg.lts_status == 'lts_ending' %}
+          LTS ending{% if pkg.eol_date %} {{ pkg.eol_date | date }}{% endif %}
+        {% elif pkg.lts_status == 'lts' %}
+          Active LTS
+        {% elif pkg.lts_status == 'current' %}
+          Current
+        {% elif pkg.versions_behind_major > 0 %}
+          {{ pkg.versions_behind_major }} major behind
+        {% else %}
+          Up to date
+        {% endif %}
+      </td>
+      <td class="govuk-table__cell">
+        {% if pkg.state == 'green' %}
+          {{ govukTag({ text: "Current", classes: "govuk-tag--green" }) }}
+        {% elif pkg.state == 'amber' %}
+          {{ govukTag({ text: "Behind", classes: "govuk-tag--yellow" }) }}
+        {% elif pkg.state == 'red' %}
+          {{ govukTag({ text: "Outdated", classes: "govuk-tag--red" }) }}
+        {% else %}
+          {{ govukTag({ text: "Unknown", classes: "govuk-tag--grey" }) }}
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<h2 class="govuk-heading-l">Recent SBOMs</h2>
+
+{% if recentSboms.length > 0 %}
+<table class="govuk-table">
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th scope="col" class="govuk-table__header">Received</th>
+      <th scope="col" class="govuk-table__header">Format</th>
+      <th scope="col" class="govuk-table__header">Components</th>
+      <th scope="col" class="govuk-table__header">Status</th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+    {% for sbom in recentSboms %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell">{{ sbom.received_at | date }}</td>
+      <td class="govuk-table__cell">{{ sbom.format }}</td>
+      <td class="govuk-table__cell">{{ sbom.component_count }}</td>
+      <td class="govuk-table__cell">
+        {% if sbom.normalisation_status == 'complete' %}
+          {{ govukTag({ text: "Complete", classes: "govuk-tag--green" }) }}
+        {% elif sbom.normalisation_status == 'failed' %}
+          {{ govukTag({ text: "Failed", classes: "govuk-tag--red" }) }}
+        {% else %}
+          {{ govukTag({ text: "Pending", classes: "govuk-tag--grey" }) }}
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="govuk-body">No SBOMs received yet.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,169 @@
+openapi: 3.0.3
+info:
+  title: VODG SBOM Ingestion API
+  version: 1.0.0
+  description: |
+    Accepts Software Bills of Materials (SBOMs) from service team CI/CD pipelines.
+    Processing occurs asynchronously after ingestion.
+  contact:
+    name: Digital Government Observability Team
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+
+paths:
+  /api/modules/sbom/services/{service_id}:
+    post:
+      operationId: ingestSbom
+      summary: Submit an SBOM for a registered service
+      description: |
+        Accepts a CycloneDX JSON or SPDX JSON SBOM payload. The raw SBOM is stored in S3
+        and a normalisation job is enqueued for asynchronous processing. Returns 202 on success.
+      parameters:
+        - name: service_id
+          in: path
+          required: true
+          description: UUID of the registered service
+          schema:
+            type: string
+            format: uuid
+            example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        - name: X-API-Key
+          in: header
+          required: true
+          description: Per-service API key provisioned via the admin interface
+          schema:
+            type: string
+            example: "sbom_a1b2c3d4e5f67890abcdef1234567890"
+      requestBody:
+        required: true
+        description: Raw SBOM payload in CycloneDX or SPDX JSON format
+        content:
+          application/json:
+            schema:
+              type: object
+              description: CycloneDX JSON SBOM (identified by bomFormat field)
+              properties:
+                bomFormat:
+                  type: string
+                  enum: [CycloneDX]
+                specVersion:
+                  type: string
+                  example: "1.5"
+                components:
+                  type: array
+                  items:
+                    type: object
+              required:
+                - bomFormat
+                - specVersion
+                - components
+          application/spdx+json:
+            schema:
+              type: object
+              description: SPDX JSON SBOM (identified by spdxVersion field)
+              properties:
+                spdxVersion:
+                  type: string
+                  example: "SPDX-2.3"
+                SPDXID:
+                  type: string
+                packages:
+                  type: array
+                  items:
+                    type: object
+              required:
+                - spdxVersion
+                - SPDXID
+                - packages
+      responses:
+        "202":
+          description: SBOM accepted for asynchronous processing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [accepted]
+                  record_id:
+                    type: string
+                    format: uuid
+                  s3_key:
+                    type: string
+                    example: "sboms/a1b2c3d4-e5f6-7890-abcd-ef1234567890/2026-05-05T10-30-00-000Z-cyclonedx.json"
+                  received_at:
+                    type: string
+                    format: date-time
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: API key does not have access to this service_id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: service_id not found or inactive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Payload exceeds maximum size (10MB)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Unrecognised SBOM format or invalid JSON
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Rate limit exceeded
+
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check endpoint
+      description: Returns 200 if the service is running
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+      required:
+        - error
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Per-service API key (format sbom_[32 hex chars])
+
+security:
+  - ApiKeyAuth: []

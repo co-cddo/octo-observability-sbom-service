@@ -1,0 +1,43 @@
+name: Push SBOM to VODG
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate CycloneDX SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          format: cyclonedx-json
+          output-file: sbom.json
+
+      - name: Push SBOM to VODG
+        env:
+          VODG_SBOM_API_KEY: ${{ secrets.VODG_SBOM_API_KEY }}
+          VODG_SBOM_URL: ${{ vars.VODG_SBOM_URL }}
+          VODG_SERVICE_ID: ${{ vars.VODG_SERVICE_ID }}
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "X-API-Key: ${VODG_SBOM_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d @sbom.json \
+            "${VODG_SBOM_URL}/api/modules/sbom/services/${VODG_SERVICE_ID}")
+
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "Response: ${http_code}"
+          echo "${body}"
+
+          if [ "${http_code}" != "202" ]; then
+            echo "::error::SBOM push failed with HTTP ${http_code}"
+            exit 1
+          fi

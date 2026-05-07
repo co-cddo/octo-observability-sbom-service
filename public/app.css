@@ -1,0 +1,26 @@
+.app-metric-card {
+  padding: 15px;
+  border: 1px solid #b1b4b6;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.app-metric-card__value {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #0b0c0c;
+}
+
+.app-metric-card__label {
+  font-size: 16px;
+  color: #505a5f;
+  margin-top: 5px;
+}
+
+.app-inset-text--monospace .govuk-inset-text__content,
+.app-inset-text--monospace {
+  font-family: monospace;
+  word-break: break-all;
+  font-size: 16px;
+}

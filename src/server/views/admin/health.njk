@@ -1,0 +1,72 @@
+{% from "govuk/components/panel/macro.njk" import govukPanel %}
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% extends "../layout.njk" %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">System Health</h1>
+
+{% if allOk %}
+{{ govukPanel({
+  titleText: "All systems operational"
+}) }}
+{% endif %}
+
+<table class="govuk-table">
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th scope="col" class="govuk-table__header">Component</th>
+      <th scope="col" class="govuk-table__header">Status</th>
+      <th scope="col" class="govuk-table__header">Detail</th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+    {% for check in checks %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell">{{ check.name }}</td>
+      <td class="govuk-table__cell">
+        {% if check.status == 'ok' %}
+          {{ govukTag({ text: "OK", classes: "govuk-tag--green" }) }}
+        {% else %}
+          {{ govukTag({ text: "Error", classes: "govuk-tag--red" }) }}
+        {% endif %}
+      </td>
+      <td class="govuk-table__cell">{{ check.detail if check.detail else "—" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2 class="govuk-heading-l">OSV Vulnerability Mirror</h2>
+
+<form method="POST" action="/admin/sync" class="govuk-!-margin-bottom-4">
+  {{ govukButton({
+    text: "Trigger sync now",
+    classes: "govuk-button--secondary"
+  }) }}
+</form>
+
+{% if syncState.length > 0 %}
+<table class="govuk-table">
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th scope="col" class="govuk-table__header">Ecosystem</th>
+      <th scope="col" class="govuk-table__header">Last synced</th>
+      <th scope="col" class="govuk-table__header">Vulnerabilities</th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+    {% for row in syncState %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell">{{ row.ecosystem }}</td>
+      <td class="govuk-table__cell">{{ row.last_synced_at | date }}</td>
+      <td class="govuk-table__cell">{{ row.vuln_count }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="govuk-body">No ecosystems synced yet. Trigger a sync to populate the mirror.</p>
+{% endif %}
+{% endblock %}

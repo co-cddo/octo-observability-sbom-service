@@ -1,0 +1,3 @@
+[allowlist]
+  description = "Known safe patterns"
+  paths = ["docker-compose.yml", ".env.example"]

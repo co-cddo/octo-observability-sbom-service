@@ -1,0 +1,74 @@
+{% from "govuk/components/phase-banner/macro.njk" import govukPhaseBanner %}
+{% from "govuk/components/footer/macro.njk" import govukFooter %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% extends "govuk/template.njk" %}
+
+{% block pageTitle %}
+  SBOM Service
+{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="/stylesheets/govuk-frontend.min.css">
+  <link rel="stylesheet" href="/stylesheets/app.css">
+{% endblock %}
+
+
+{% block govukServiceNavigation %}
+  {{ govukServiceNavigation({
+    serviceName: "SBOM Service",
+    serviceUrl: "/dashboard",
+    navigation: [
+      {
+        href: "/dashboard",
+        text: "Dashboard"
+      },
+      {
+        href: "/admin/services",
+        text: "Services"
+      },
+      {
+        href: "/admin/jobs",
+        text: "Jobs"
+      },
+      {
+        href: "/admin/health",
+        text: "Health"
+      },
+      {
+        href: "/auth/logout",
+        text: "Sign out"
+      }
+    ] if user else []
+  }) }}
+{% endblock %}
+
+{% block headerEnd %}
+  {{ govukPhaseBanner({
+    tag: {
+      text: "Alpha"
+    },
+    html: 'This is a new service - your <a class="govuk-link" href="mailto:observability@dsit.gov.uk">feedback</a> will help us to improve it.'
+  }) }}
+{% endblock %}
+
+{% block govukFooter %}
+  {{ govukFooter({
+    meta: {
+      items: [
+        {
+          href: "mailto:observability@dsit.gov.uk",
+          text: "Contact"
+        }
+      ]
+    }
+  }) }}
+{% endblock %}
+
+{% block bodyEnd %}
+  <script type="module" nonce="{{ cspNonce }}" src="/javascripts/govuk-frontend.min.js"></script>
+  <script type="module" nonce="{{ cspNonce }}">
+    import {initAll} from '/javascripts/govuk-frontend.min.js'
+    initAll()
+  </script>
+{% endblock %}

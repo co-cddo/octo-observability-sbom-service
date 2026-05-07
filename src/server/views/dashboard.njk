@@ -1,0 +1,73 @@
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+
+{% extends "layout.njk" %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">SBOM Dashboard</h1>
+
+<table class="govuk-table">
+  <caption class="govuk-table__caption govuk-table__caption--m">Services and vulnerability status</caption>
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      {% macro sortHeader(label, column) %}
+        {% set nextDir = "desc" if (sort == column and dir == "asc") else "asc" %}
+        <th scope="col" class="govuk-table__header">
+          <a href="?sort={{ column }}&dir={{ nextDir }}" class="govuk-link govuk-link--no-visited-state" style="text-decoration: none; color: inherit;">
+            {{ label }}{% if sort == column %} {{ "▲" if dir == "asc" else "▼" }}{% endif %}
+          </a>
+        </th>
+      {% endmacro %}
+      {{ sortHeader("Service", "service") }}
+      {{ sortHeader("Organisation", "organisation") }}
+      {{ sortHeader("Critical", "critical") }}
+      {{ sortHeader("High", "high") }}
+      {{ sortHeader("Release Cadence", "cadence") }}
+      {{ sortHeader("Freshness", "freshness") }}
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+    {% for service in services %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell">
+        <a href="/services/{{ service.id }}" class="govuk-link">{{ service.name }}</a>
+      </td>
+      <td class="govuk-table__cell">{{ service.organisation }}</td>
+      <td class="govuk-table__cell">{{ service.critical_cve_count }}</td>
+      <td class="govuk-table__cell">{{ service.high_cve_count }}</td>
+      <td class="govuk-table__cell">
+        {% if service.cadence_state == 'green' %}
+          {{ govukTag({ text: "Active", classes: "govuk-tag--green" }) }}
+        {% elif service.cadence_state == 'amber' %}
+          {{ govukTag({ text: "Slow", classes: "govuk-tag--amber" }) }}
+        {% elif service.cadence_state == 'red' %}
+          {{ govukTag({ text: "Stale", classes: "govuk-tag--red" }) }}
+        {% else %}
+          {{ govukTag({ text: "No data", classes: "govuk-tag--grey" }) }}
+        {% endif %}
+        {% if service.days_since_last_release is not none %}
+          <span class="govuk-body-s">({{ service.days_since_last_release }}d ago)</span>
+        {% endif %}
+      </td>
+      <td class="govuk-table__cell">
+        {% if service.freshness_state == 'green' %}
+          {{ govukTag({ text: "Current", classes: "govuk-tag--green" }) }}
+        {% elif service.freshness_state == 'amber' %}
+          {{ govukTag({ text: "Behind", classes: "govuk-tag--yellow" }) }}
+        {% elif service.freshness_state == 'red' %}
+          {{ govukTag({ text: "Outdated", classes: "govuk-tag--red" }) }}
+        {% else %}
+          {{ govukTag({ text: "No data", classes: "govuk-tag--grey" }) }}
+        {% endif %}
+        {% if service.freshness_worst_detail %}
+          <span class="govuk-body-s">{{ service.freshness_worst_package }}: {{ service.freshness_worst_detail }}</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell" colspan="6">No services registered yet.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

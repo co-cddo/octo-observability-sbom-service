@@ -1,0 +1,96 @@
+{% from "govuk/components/back-link/macro.njk" import govukBackLink %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+
+{% extends "../layout.njk" %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back to keys",
+    href: "/admin/services/" + service.id + "/keys"
+  }) }}
+{% endblock %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">Integration — {{ service.name }}</h1>
+
+<p class="govuk-body-l">Service ID: <code>{{ service.id }}</code></p>
+
+<h2 class="govuk-heading-l">1. Test with curl</h2>
+
+<p class="govuk-body">Fetch the SBOM from GitHub's dependency graph API and push it to VODG:</p>
+
+<pre class="govuk-body"><code>gh api /repos/OWNER/REPO/dependency-graph/sbom | jq '.sbom' > sbom.json
+
+curl -X POST \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/spdx+json" \
+  -d @sbom.json \
+  "{{ baseUrl }}/api/modules/sbom/services/{{ service.id }}"</code></pre>
+
+<h2 class="govuk-heading-l">2. Alternative: Generate locally</h2>
+
+<p class="govuk-body">For repos with lockfiles (Node.js, Python, Go, Ruby):</p>
+
+<pre class="govuk-body"><code># Using Syft (recommended for containers/filesystems)
+syft . -o cyclonedx-json > sbom.json
+
+# Using Trivy
+trivy fs . --format cyclonedx --output sbom.json
+
+# Then push:
+curl -X POST \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d @sbom.json \
+  "{{ baseUrl }}/api/modules/sbom/services/{{ service.id }}"</code></pre>
+
+<p class="govuk-body"><strong>Note:</strong> For Java/Gradle projects without lockfiles, use the GitHub API method above — it resolves the full dependency tree including transitive dependencies.</p>
+
+<h2 class="govuk-heading-l">3. GitHub Action</h2>
+
+<p class="govuk-body">Add this workflow to your repository at <code>.github/workflows/sbom.yml</code>:</p>
+
+<pre class="govuk-body"><code>name: Push SBOM to VODG
+on:
+  push:
+    branches: [main]
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Fetch SBOM from GitHub dependency graph
+        env:
+          GH_TOKEN: {% raw %}${{ secrets.GITHUB_TOKEN }}{% endraw %}
+        run: gh api /repos/{% raw %}${{ github.repository }}{% endraw %}/dependency-graph/sbom | jq '.sbom' > sbom.json
+
+      - name: Push SBOM to VODG
+        run: |
+          curl -sf -X POST \
+            -H "X-API-Key: {% raw %}${{ secrets.VODG_SBOM_API_KEY }}{% endraw %}" \
+            -H "Content-Type: application/spdx+json" \
+            -d @sbom.json \
+            "{{ baseUrl }}/api/modules/sbom/services/{{ service.id }}"</code></pre>
+
+<h3 class="govuk-heading-m">Required GitHub configuration</h3>
+
+{{ govukSummaryList({
+  rows: [
+    {
+      key: { html: "Secret: <code>VODG_SBOM_API_KEY</code>" },
+      value: { text: "Your API key (generated on the keys page)" }
+    }
+  ]
+}) }}
+
+<h2 class="govuk-heading-l">4. What happens next</h2>
+
+<ol class="govuk-list govuk-list--number">
+  <li>Your SBOM is stored and normalised (components extracted)</li>
+  <li>Each component is checked against our local OSV.dev vulnerability mirror</li>
+  <li>Results appear on the <a href="/services/{{ service.id }}" class="govuk-link">service dashboard</a></li>
+  <li>New vulnerabilities are detected automatically every 6 hours when the mirror syncs</li>
+</ol>
+{% endblock %}

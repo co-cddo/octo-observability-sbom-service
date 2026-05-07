@@ -1,0 +1,43 @@
+{% from "govuk/components/back-link/macro.njk" import govukBackLink %}
+{% from "govuk/components/input/macro.njk" import govukInput %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% extends "../layout.njk" %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back to services",
+    href: "/admin/services"
+  }) }}
+{% endblock %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">{{ "Edit " + service.name if service else "Register new service" }}</h1>
+
+<form method="POST" action="{{ '/admin/services/' + service.id if service else '/admin/services' }}">
+  {{ govukInput({
+    label: {
+      text: "Service name",
+      classes: "govuk-label--m"
+    },
+    id: "name",
+    name: "name",
+    value: service.name if service else '',
+    attributes: { required: "required" }
+  }) }}
+
+  {{ govukInput({
+    label: {
+      text: "Organisation",
+      classes: "govuk-label--m"
+    },
+    id: "organisation",
+    name: "organisation",
+    value: service.organisation if service else ''
+  }) }}
+
+  {{ govukButton({
+    text: "Update" if service else "Create service"
+  }) }}
+</form>
+{% endblock %}

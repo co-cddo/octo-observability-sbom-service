@@ -1,0 +1,87 @@
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+{% from "govuk/components/details/macro.njk" import govukDetails %}
+{% from "components/metric-card.njk" import appMetricCard %}
+
+{% extends "../layout.njk" %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">Job Queue</h1>
+
+<div class="govuk-grid-row govuk-!-margin-bottom-6">
+  <div class="govuk-grid-column-one-quarter">
+    {{ appMetricCard({ value: counts.created, label: "Pending" }) }}
+  </div>
+  <div class="govuk-grid-column-one-quarter">
+    {{ appMetricCard({ value: counts.active, label: "Active" }) }}
+  </div>
+  <div class="govuk-grid-column-one-quarter">
+    {{ appMetricCard({ value: counts.completed, label: "Completed" }) }}
+  </div>
+  <div class="govuk-grid-column-one-quarter">
+    {{ appMetricCard({ value: counts.failed, label: "Failed" }) }}
+  </div>
+</div>
+
+<h2 class="govuk-heading-m">Trigger scheduled jobs</h2>
+<div class="govuk-button-group">
+  <form method="POST" action="/admin/sync" style="display:inline">
+    <button class="govuk-button govuk-button--secondary" data-module="govuk-button">OSV Sync</button>
+  </form>
+  <form method="POST" action="/admin/freshness-sync" style="display:inline">
+    <button class="govuk-button govuk-button--secondary" data-module="govuk-button">Freshness Sync</button>
+  </form>
+</div>
+
+<table class="govuk-table">
+  <caption class="govuk-table__caption govuk-table__caption--m">Recent jobs (last 50)</caption>
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th scope="col" class="govuk-table__header">Name</th>
+      <th scope="col" class="govuk-table__header">State</th>
+      <th scope="col" class="govuk-table__header">Created</th>
+      <th scope="col" class="govuk-table__header">Completed</th>
+      <th scope="col" class="govuk-table__header">Output</th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+    {% for job in jobs %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell"><code>{{ job.display_name }}</code></td>
+      <td class="govuk-table__cell">
+        {% if job.state == 'completed' %}
+          {{ govukTag({ text: job.state, classes: "govuk-tag--green" }) }}
+        {% elif job.state == 'failed' %}
+          {{ govukTag({ text: job.state, classes: "govuk-tag--red" }) }}
+        {% elif job.state == 'active' %}
+          {{ govukTag({ text: job.state, classes: "govuk-tag--amber" }) }}
+        {% else %}
+          {{ govukTag({ text: job.state, classes: "govuk-tag--grey" }) }}
+        {% endif %}
+      </td>
+      <td class="govuk-table__cell">{{ job.created_on | date }}</td>
+      <td class="govuk-table__cell">{{ job.completed_on | date if job.completed_on else "—" }}</td>
+      <td class="govuk-table__cell">
+        {% if job.output %}
+          {% if job.state == 'failed' %}
+            {% set errorHtml %}<pre style="font-size: 12px; max-width: 400px; overflow: auto;">{{ job.output | dump(2) }}</pre>{% endset %}
+            {{ govukDetails({
+              summaryText: "Error",
+              html: errorHtml,
+              classes: "govuk-!-margin-bottom-0"
+            }) }}
+          {% elif job.output.value %}
+            {{ job.output.value }}
+          {% else %}
+            <code style="font-size: 12px;">{{ job.output | dump }}</code>
+          {% endif %}
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell" colspan="5">No jobs found.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

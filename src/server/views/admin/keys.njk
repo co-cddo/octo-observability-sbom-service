@@ -1,0 +1,81 @@
+{% from "govuk/components/back-link/macro.njk" import govukBackLink %}
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% extends "../layout.njk" %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back to services",
+    href: "/admin/services"
+  }) }}
+{% endblock %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">API Keys — {{ service.name }}</h1>
+
+<form method="POST" action="/admin/services/{{ service.id }}/keys" class="govuk-!-margin-bottom-6">
+  <div class="govuk-form-group" style="display: inline-block; margin-right: 10px;">
+    <label class="govuk-label" for="label">Label</label>
+    <input class="govuk-input govuk-input--width-20" id="label" name="label" type="text" placeholder="production-ci">
+  </div>
+  {{ govukButton({
+    text: "Generate key",
+    classes: "govuk-button--secondary",
+    attributes: { style: "margin-top: 29px;" }
+  }) }}
+</form>
+
+<form method="POST" action="/admin/services/{{ service.id }}/scan" style="display: inline-block;">
+  {{ govukButton({
+    text: "Trigger vulnerability scan",
+    classes: "govuk-button--warning"
+  }) }}
+</form>
+
+<table class="govuk-table">
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th scope="col" class="govuk-table__header">Prefix</th>
+      <th scope="col" class="govuk-table__header">Label</th>
+      <th scope="col" class="govuk-table__header">Created by</th>
+      <th scope="col" class="govuk-table__header">Created</th>
+      <th scope="col" class="govuk-table__header">Last used</th>
+      <th scope="col" class="govuk-table__header">Status</th>
+      <th scope="col" class="govuk-table__header">Actions</th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+    {% for key in keys %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell"><code>{{ key.key_prefix }}...</code></td>
+      <td class="govuk-table__cell">{{ key.label }}</td>
+      <td class="govuk-table__cell">{{ key.created_by }}</td>
+      <td class="govuk-table__cell">{{ key.created_at | date }}</td>
+      <td class="govuk-table__cell">{{ key.last_used_at | date if key.last_used_at else "Never" }}</td>
+      <td class="govuk-table__cell">
+        {% if key.revoked_at %}
+          {{ govukTag({ text: "Revoked", classes: "govuk-tag--red" }) }}
+        {% else %}
+          {{ govukTag({ text: "Active", classes: "govuk-tag--green" }) }}
+        {% endif %}
+      </td>
+      <td class="govuk-table__cell">
+        {% if not key.revoked_at %}
+        <form method="POST" action="/admin/services/{{ service.id }}/keys/{{ key.id }}/revoke" style="display: inline;">
+          {{ govukButton({
+            text: "Revoke",
+            classes: "govuk-button--warning govuk-!-margin-bottom-0"
+          }) }}
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell" colspan="7">No API keys. Generate one above.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
