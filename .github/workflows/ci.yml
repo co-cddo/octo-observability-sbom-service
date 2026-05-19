@@ -102,9 +102,22 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  submit-sbom:
+    if: github.event_name == 'push'
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: co-cddo/octo-observability-public-workflows@4601d05b71223644141c0bd75e3c1089022ab4a7 # v0.0.3
+        with:
+          base-url: ${{ vars.OBSERVABILITY_BASE_URL }}
+          service-id: ${{ vars.OBSERVABILITY_SERVICE_ID }}
+          api-key: ${{ secrets.OBSERVABILITY_API_KEY }}
+
   check:
     if: always()
-    needs: [gitleaks, zizmor, commitlint, lint, test, build]
+    needs: [gitleaks, zizmor, commitlint, lint, test, build, submit-sbom]
     runs-on: ubuntu-latest
     steps:
       - name: Verify all jobs passed
@@ -116,6 +129,7 @@ jobs:
             "${{ needs.lint.result }}" \
             "${{ needs.test.result }}" \
             "${{ needs.build.result }}" \
+            "${{ needs.submit-sbom.result }}" \
           )
           for r in "${results[@]}"; do
             if [[ "$r" != "success" && "$r" != "skipped" ]]; then
