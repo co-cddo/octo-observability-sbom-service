@@ -109,7 +109,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: co-cddo/octo-observability-public-workflows@4601d05b71223644141c0bd75e3c1089022ab4a7 # v0.0.3
+      - uses: co-cddo/octo-observability-public-workflows@3a34016f687d4a76ec4a2a37e4ec4d82a16f5327 # v0.0.4
         with:
           base-url: ${{ vars.OBSERVABILITY_BASE_URL }}
           service-id: ${{ vars.OBSERVABILITY_SERVICE_ID }}
