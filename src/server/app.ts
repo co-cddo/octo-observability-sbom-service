@@ -14,6 +14,7 @@ import { createIngestRouter } from "../ingest/router";
 import { dashboardRouter } from "./routes/dashboard";
 import { servicesRouter } from "./routes/services";
 import { adminRouter } from "./routes/admin";
+import { monitoringRouter } from "./routes/monitoring";
 
 export function createApp(
   pool: Pool,
@@ -69,7 +70,11 @@ export function createApp(
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", `'nonce-${res.locals.cspNonce}'`],
+          scriptSrc: [
+            "'self'",
+            `'nonce-${res.locals.cspNonce}'`,
+            "https://cdn.jsdelivr.net",
+          ],
           styleSrc: ["'self'"],
         },
       },
@@ -145,6 +150,7 @@ export function createApp(
     express.urlencoded({ extended: false }),
     adminRouter(pool, boss, config),
   );
+  app.use("/monitoring", requireAuth(), monitoringRouter(pool));
 
   return app;
 }
