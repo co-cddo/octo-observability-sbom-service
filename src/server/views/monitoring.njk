@@ -1,0 +1,332 @@
+{% extends "layout.njk" %}
+
+{% block pageTitle %}Submission Monitoring — SBOM Service{% endblock %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">Submission Monitoring</h1>
+
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-full">
+    <h2 class="govuk-heading-m">Submission Volume (per minute)</h2>
+    <div class="monitoring-chart-container">
+      <canvas id="volumeChart" height="120"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="govuk-grid-row govuk-!-margin-top-4">
+  <div class="govuk-grid-column-full">
+    <h2 class="govuk-heading-m">Error Rate (%)</h2>
+    <div class="monitoring-chart-container">
+      <canvas id="errorRateChart" height="120"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="govuk-grid-row govuk-!-margin-top-2">
+  <div class="govuk-grid-column-full">
+    <p class="govuk-body-s govuk-!-colour-secondary" id="last-updated">Updating every 30 seconds</p>
+  </div>
+</div>
+
+<div id="drilldown-panel" class="govuk-!-margin-top-6" hidden>
+  <div class="govuk-card">
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-three-quarters">
+        <h2 class="govuk-heading-m" id="drilldown-title">Drill-down</h2>
+      </div>
+      <div class="govuk-grid-column-one-quarter" style="text-align: right;">
+        <button class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0" id="drilldown-close">Close</button>
+      </div>
+    </div>
+
+    <div id="drilldown-no-data" hidden>
+      <p class="govuk-body">No submissions in this window.</p>
+    </div>
+
+    <div id="drilldown-data">
+      <div class="govuk-grid-row">
+        <div class="govuk-grid-column-one-half">
+          <h3 class="govuk-heading-s">Top services by submission count</h3>
+          <table class="govuk-table govuk-table--small-text-until-tablet">
+            <thead class="govuk-table__head">
+              <tr class="govuk-table__row">
+                <th class="govuk-table__header">Service</th>
+                <th class="govuk-table__header govuk-table__header--numeric">Count</th>
+              </tr>
+            </thead>
+            <tbody class="govuk-table__body" id="drilldown-services">
+            </tbody>
+          </table>
+        </div>
+
+        <div class="govuk-grid-column-one-half">
+          <h3 class="govuk-heading-s">Error breakdown</h3>
+          <div id="drilldown-no-errors" hidden>
+            <p class="govuk-body-s">No errors in this window.</p>
+          </div>
+          <table class="govuk-table govuk-table--small-text-until-tablet" id="drilldown-error-table">
+            <thead class="govuk-table__head">
+              <tr class="govuk-table__row">
+                <th class="govuk-table__header">Error type</th>
+                <th class="govuk-table__header govuk-table__header--numeric">Count</th>
+                <th class="govuk-table__header govuk-table__header--numeric">%</th>
+              </tr>
+            </thead>
+            <tbody class="govuk-table__body" id="drilldown-errors">
+            </tbody>
+          </table>
+          <div id="drilldown-processing" hidden>
+            <p class="govuk-body-s">
+              <strong>Processing:</strong> <span id="drilldown-pending-count"></span> submission(s) still in progress.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="govuk-grid-row govuk-!-margin-top-4">
+  <div class="govuk-grid-column-full">
+    <details class="govuk-details">
+      <summary class="govuk-details__summary">
+        <span class="govuk-details__summary-text">Error type legend</span>
+      </summary>
+      <div class="govuk-details__text">
+        <dl class="govuk-summary-list">
+          <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key"><abbr title="GitHub API rate limit reached; submissions queued for retry">rate_limit</abbr></dt>
+            <dd class="govuk-summary-list__value">GitHub API rate limit reached; submissions queued for retry.</dd>
+          </div>
+          <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key"><abbr title="SBOM format or content failed validation checks">validation_error</abbr></dt>
+            <dd class="govuk-summary-list__value">SBOM format or content failed validation checks.</dd>
+          </div>
+          <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key"><abbr title="Authentication or authorisation failure during submission">auth_error</abbr></dt>
+            <dd class="govuk-summary-list__value">Authentication or authorisation failure during submission.</dd>
+          </div>
+          <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key"><abbr title="Submission timed out during processing">timeout</abbr></dt>
+            <dd class="govuk-summary-list__value">Submission timed out during processing.</dd>
+          </div>
+          <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key"><abbr title="Error type could not be classified from the error message">unknown</abbr></dt>
+            <dd class="govuk-summary-list__value">Error type could not be classified from the error message.</dd>
+          </div>
+        </dl>
+      </div>
+    </details>
+  </div>
+</div>
+
+<style nonce="{{ cspNonce }}">
+  .monitoring-chart-container {
+    position: relative;
+    width: 100%;
+    max-height: 300px;
+  }
+  #drilldown-panel .govuk-card {
+    border: 1px solid #b1b4b6;
+    padding: 20px;
+  }
+  @media (max-width: 768px) {
+    .monitoring-chart-container {
+      max-height: 200px;
+    }
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js" nonce="{{ cspNonce }}"></script>
+
+<script type="module" nonce="{{ cspNonce }}">
+  const initialMetrics = {{ metrics | safe }};
+
+  const ERROR_RATE_THRESHOLD = 5;
+  const POLL_INTERVAL_MS = 30_000;
+
+  function extractChartData(metrics) {
+    const labels = metrics.map(b => new Date(b.minute).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+    const volumeData = metrics.map(b => b.total);
+    const errorRateData = metrics.map(b => b.error_rate_pct);
+    const errorRateColors = errorRateData.map(v => (v !== null && v > ERROR_RATE_THRESHOLD) ? '#d4351c' : '#1d70b8');
+    return { labels, volumeData, errorRateData, errorRateColors };
+  }
+
+  const { labels, volumeData, errorRateData, errorRateColors } = extractChartData(initialMetrics);
+
+  const volumeChart = new Chart(document.getElementById('volumeChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Submissions per minute',
+        data: volumeData,
+        borderColor: '#1d70b8',
+        backgroundColor: 'rgba(29, 112, 184, 0.1)',
+        fill: true,
+        tension: 0.2,
+        pointRadius: 3,
+        pointHoverRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      onClick: async (_evt, elements) => {
+        if (elements.length === 0) return;
+        const index = elements[0].index;
+        const bucket = currentMetrics[index];
+        if (bucket) await loadDrilldown(bucket.minute);
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { mode: 'index', intersect: false },
+      },
+      scales: {
+        x: { ticks: { maxTicksLimit: 12 } },
+        y: { beginAtZero: true, title: { display: true, text: 'Count' } },
+      },
+    }
+  });
+
+  const errorRateChart = new Chart(document.getElementById('errorRateChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Error rate (%)',
+        data: errorRateData,
+        borderColor: '#d4351c',
+        backgroundColor: 'rgba(212, 53, 28, 0.1)',
+        fill: true,
+        tension: 0.2,
+        pointRadius: 3,
+        pointHoverRadius: 6,
+        pointBackgroundColor: errorRateColors,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      onClick: async (_evt, elements) => {
+        if (elements.length === 0) return;
+        const index = elements[0].index;
+        const bucket = currentMetrics[index];
+        if (bucket) await loadDrilldown(bucket.minute);
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            label: ctx => ctx.parsed.y === null ? 'Processing…' : `${ctx.parsed.y}%`,
+          },
+        },
+      },
+      scales: {
+        x: { ticks: { maxTicksLimit: 12 } },
+        y: { beginAtZero: true, max: 100, title: { display: true, text: 'Error rate (%)' } },
+      },
+    }
+  });
+
+  let currentMetrics = initialMetrics;
+
+  async function pollMetrics() {
+    try {
+      const res = await fetch('/monitoring/api/metrics');
+      if (!res.ok) return;
+      const metrics = await res.json();
+      currentMetrics = metrics;
+      const { labels, volumeData, errorRateData, errorRateColors } = extractChartData(metrics);
+      volumeChart.data.labels = labels;
+      volumeChart.data.datasets[0].data = volumeData;
+      errorRateChart.data.labels = labels;
+      errorRateChart.data.datasets[0].data = errorRateData;
+      errorRateChart.data.datasets[0].pointBackgroundColor = errorRateColors;
+      volumeChart.update('none');
+      errorRateChart.update('none');
+      document.getElementById('last-updated').textContent =
+        'Last updated: ' + new Date().toLocaleTimeString('en-GB');
+    } catch (_e) {
+      // network error — will retry next interval
+    }
+  }
+
+  setInterval(pollMetrics, POLL_INTERVAL_MS);
+
+  async function loadDrilldown(minute) {
+    const panel = document.getElementById('drilldown-panel');
+    const title = document.getElementById('drilldown-title');
+    const noData = document.getElementById('drilldown-no-data');
+    const dataSection = document.getElementById('drilldown-data');
+    const servicesBody = document.getElementById('drilldown-services');
+    const errorsBody = document.getElementById('drilldown-errors');
+    const noErrors = document.getElementById('drilldown-no-errors');
+    const errorTable = document.getElementById('drilldown-error-table');
+    const processingDiv = document.getElementById('drilldown-processing');
+    const pendingCountSpan = document.getElementById('drilldown-pending-count');
+
+    const minuteDate = new Date(minute);
+    title.textContent = 'Drill-down: ' + minuteDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    panel.hidden = false;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    const res = await fetch('/monitoring/api/drilldown?minute=' + encodeURIComponent(new Date(minute).toISOString()));
+    if (!res.ok) {
+      noData.hidden = false;
+      dataSection.hidden = true;
+      return;
+    }
+    const data = await res.json();
+
+    if (data.top_services.length === 0 && data.error_breakdown.length === 0 && data.pending_count === 0) {
+      noData.hidden = false;
+      dataSection.hidden = true;
+      return;
+    }
+
+    noData.hidden = true;
+    dataSection.hidden = false;
+
+    servicesBody.innerHTML = data.top_services.length === 0
+      ? '<tr class="govuk-table__row"><td class="govuk-table__cell" colspan="2">No services with submissions.</td></tr>'
+      : data.top_services.map(s =>
+          `<tr class="govuk-table__row"><td class="govuk-table__cell">${escapeHtml(s.name)}</td><td class="govuk-table__cell govuk-table__cell--numeric">${s.count}</td></tr>`
+        ).join('');
+
+    if (data.error_breakdown.length === 0) {
+      noErrors.hidden = false;
+      errorTable.hidden = true;
+    } else {
+      noErrors.hidden = true;
+      errorTable.hidden = false;
+      errorsBody.innerHTML = data.error_breakdown.map(e =>
+        `<tr class="govuk-table__row">
+          <td class="govuk-table__cell">${escapeHtml(e.error_type)}</td>
+          <td class="govuk-table__cell govuk-table__cell--numeric">${e.count}</td>
+          <td class="govuk-table__cell govuk-table__cell--numeric">${e.pct}%</td>
+        </tr>`
+      ).join('');
+    }
+
+    if (data.pending_count > 0) {
+      processingDiv.hidden = false;
+      pendingCountSpan.textContent = data.pending_count;
+    } else {
+      processingDiv.hidden = true;
+    }
+  }
+
+  document.getElementById('drilldown-close').addEventListener('click', () => {
+    document.getElementById('drilldown-panel').hidden = true;
+  });
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+</script>
+{% endblock %}
