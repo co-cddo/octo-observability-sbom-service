@@ -5,7 +5,7 @@
   "main": "dist/main.js",
   "packageManager": "pnpm@10.33.0",
   "engines": {
-    "node": ">=22"
+    "node": ">=26"
   },
   "scripts": {
     "build": "tsc",
