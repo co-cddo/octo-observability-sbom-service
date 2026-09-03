@@ -1,7 +1,7 @@
 import { Router } from "express";
 import crypto from "crypto";
 import { Pool } from "pg";
-import PgBoss from "pg-boss";
+import { PgBoss } from "pg-boss";
 import { S3Client, HeadBucketCommand } from "@aws-sdk/client-s3";
 import { Config } from "../../config";
 import { hashApiKey } from "../../ingest/apiKeyAuth";
@@ -57,12 +57,10 @@ export function adminRouter(pool: Pool, boss: PgBoss, config: Config): Router {
   router.get("/services/:id/edit", async (req, res) => {
     const service = await getServiceById(pool, req.params.id);
     if (!service) {
-      res
-        .status(404)
-        .render("error.njk", {
-          title: "Not found",
-          message: "Service not found",
-        });
+      res.status(404).render("error.njk", {
+        title: "Not found",
+        message: "Service not found",
+      });
       return;
     }
     res.render("admin/service-edit.njk", {
@@ -102,12 +100,10 @@ export function adminRouter(pool: Pool, boss: PgBoss, config: Config): Router {
   router.get("/services/:id/keys", async (req, res) => {
     const service = await getServiceById(pool, req.params.id);
     if (!service) {
-      res
-        .status(404)
-        .render("error.njk", {
-          title: "Not found",
-          message: "Service not found",
-        });
+      res.status(404).render("error.njk", {
+        title: "Not found",
+        message: "Service not found",
+      });
       return;
     }
     const keys = await getKeysForService(pool, req.params.id);
@@ -122,12 +118,10 @@ export function adminRouter(pool: Pool, boss: PgBoss, config: Config): Router {
   router.post("/services/:id/keys", async (req, res) => {
     const service = await getServiceById(pool, req.params.id);
     if (!service) {
-      res
-        .status(404)
-        .render("error.njk", {
-          title: "Not found",
-          message: "Service not found",
-        });
+      res.status(404).render("error.njk", {
+        title: "Not found",
+        message: "Service not found",
+      });
       return;
     }
 
@@ -165,12 +159,10 @@ export function adminRouter(pool: Pool, boss: PgBoss, config: Config): Router {
   router.get("/services/:id/onboard", async (req, res) => {
     const service = await getServiceById(pool, req.params.id);
     if (!service) {
-      res
-        .status(404)
-        .render("error.njk", {
-          title: "Not found",
-          message: "Service not found",
-        });
+      res.status(404).render("error.njk", {
+        title: "Not found",
+        message: "Service not found",
+      });
       return;
     }
     const baseUrl = config.appUrl;

@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import PgBoss from "pg-boss";
+import { PgBoss } from "pg-boss";
 import { loadWatchlist } from "./watchlistLoader";
 import { fetchEndOfLifeCycles, findCycleForVersion } from "./endoflifeClient";
 import { fetchNpmLatest } from "./registryAdapters/npm";

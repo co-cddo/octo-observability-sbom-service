@@ -17,12 +17,10 @@ export function servicesRouter(pool: Pool): Router {
       [service_id],
     );
     if (service.rowCount === 0) {
-      res
-        .status(404)
-        .render("error.njk", {
-          title: "Not found",
-          message: "Service not found",
-        });
+      res.status(404).render("error.njk", {
+        title: "Not found",
+        message: "Service not found",
+      });
       return;
     }
 

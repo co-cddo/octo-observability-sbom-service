@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import PgBoss from "pg-boss";
+import { PgBoss } from "pg-boss";
 import { unlink } from "fs/promises";
 import * as unzipper from "unzipper";
 import {

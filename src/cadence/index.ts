@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import PgBoss from "pg-boss";
+import { PgBoss } from "pg-boss";
 import { updateReleaseCadenceIndicator, getServiceById } from "../db/queries";
 
 interface CadenceJobData {

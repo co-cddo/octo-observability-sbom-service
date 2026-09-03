@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import PgBoss from "pg-boss";
+import { PgBoss } from "pg-boss";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { Config } from "../config";
 import { parseCycloneDx } from "./cyclonedxParser";
