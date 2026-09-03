@@ -1,6 +1,6 @@
 FROM node:26-slim@sha256:c0753125a3789977aefe869cbebccf70e3cfd7ea84ca48547458f02e4f1d7146 AS build
 
-RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+RUN npm install -g pnpm@10.33.0
 
 WORKDIR /app
 COPY package.json pnpm-lock.yaml .npmrc ./
@@ -12,7 +12,7 @@ RUN pnpm build
 
 FROM node:26-slim@sha256:c0753125a3789977aefe869cbebccf70e3cfd7ea84ca48547458f02e4f1d7146 AS release
 
-RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+RUN npm install -g pnpm@10.33.0
 
 WORKDIR /app
 COPY package.json pnpm-lock.yaml .npmrc ./
