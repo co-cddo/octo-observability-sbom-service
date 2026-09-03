@@ -1,4 +1,4 @@
-FROM node:22-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS build
+FROM node:26-slim@sha256:c0753125a3789977aefe869cbebccf70e3cfd7ea84ca48547458f02e4f1d7146 AS build
 
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
@@ -10,7 +10,7 @@ COPY tsconfig.json ./
 COPY src/ src/
 RUN pnpm build
 
-FROM node:22-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS release
+FROM node:26-slim@sha256:c0753125a3789977aefe869cbebccf70e3cfd7ea84ca48547458f02e4f1d7146 AS release
 
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
