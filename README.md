@@ -1,5 +1,12 @@
 # sbom-service
 
+[![CI](https://github.com/co-cddo/octo-observability-sbom-service/actions/workflows/ci.yml/badge.svg)](https://github.com/co-cddo/octo-observability-sbom-service/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/co-cddo/octo-observability-sbom-service/actions/workflows/codeql.yml/badge.svg)](https://github.com/co-cddo/octo-observability-sbom-service/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/co-cddo/octo-observability-sbom-service/badge)](https://scorecard.dev/viewer/?uri=github.com/co-cddo/octo-observability-sbom-service)
+[![Licence: OGL v3](https://img.shields.io/badge/Licence-OGL_v3-blue.svg)](LICENSE)
+[![Node.js: 20+](https://img.shields.io/badge/Node.js-20%2B-green.svg)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
+
 Ingests Software Bills of Materials (SBOMs) from service team CI/CD pipelines, scans for known vulnerabilities via a local [OSV.dev](https://osv.dev) mirror, tracks dependency freshness and release cadence, and serves a GOV.UK-styled dashboard for cross-government visibility.
 
 ## What it does
