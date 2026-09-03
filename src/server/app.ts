@@ -7,7 +7,7 @@ import nunjucks from "nunjucks";
 import fs from "fs";
 import path from "path";
 import { Pool } from "pg";
-import PgBoss from "pg-boss";
+import { PgBoss } from "pg-boss";
 import { Config } from "../config";
 import { authRouter, requireAuth } from "./auth";
 import { createIngestRouter } from "../ingest/router";
@@ -144,6 +144,22 @@ export function createApp(
     requireAuth(),
     express.urlencoded({ extended: false }),
     adminRouter(pool, boss, config),
+  );
+
+  app.use(
+    (
+      err: Error,
+      _req: express.Request,
+      res: express.Response,
+      _next: express.NextFunction,
+    ) => {
+      console.error("[server] Unhandled error:", err);
+      if (res.headersSent) return;
+      res.status(500).render("error.njk", {
+        title: "Error",
+        message: "Something went wrong",
+      });
+    },
   );
 
   return app;

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { Pool } from "pg";
-import PgBoss from "pg-boss";
+import { PgBoss } from "pg-boss";
 import { Config } from "../config";
 import { createApiKeyAuthMiddleware } from "./apiKeyAuth";
 import { detectFormat, FormatDetectionError } from "./formatDetector";

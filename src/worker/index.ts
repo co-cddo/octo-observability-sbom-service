@@ -1,4 +1,4 @@
-import PgBoss from "pg-boss";
+import { PgBoss } from "pg-boss";
 import { Pool } from "pg";
 import { Config } from "../config";
 import { registerNormaliseHandler } from "../normalise";
